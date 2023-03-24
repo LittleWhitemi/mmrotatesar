@@ -12,8 +12,8 @@ lr_config = dict(   # 学习率调整配置，用于注册 LrUpdater hook
     warmup='linear',    # 预热(warmup)策略，也支持 `exp` 和 `constant`
     warmup_iters=500,   # 预热的迭代次数
     warmup_ratio=1.0 / 3,   # 用于预热的起始学习率的比率
-    step=[24, 32, 38])   # 衰减学习率的起止回合数
+    step=[24, 32, 38, 46])   # 衰减学习率的起止回合数
 runner = dict(type='EpochBasedRunner',   # 将使用的 runner 的类别 (例如 IterBasedRunner 或 EpochBasedRunner)
-              max_epochs=40)    # runner 总回合(epoch)数， 对于 IterBasedRunner 使用 `max_iters`
+              max_epochs=50)    # runner 总回合(epoch)数， 对于 IterBasedRunner 使用 `max_iters`
 checkpoint_config = dict(   # checkpoint hook 的配置文件
-    interval=1) # 保存的间隔是 12
+    interval=10) # 保存的间隔是 12
