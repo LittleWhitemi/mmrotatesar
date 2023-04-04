@@ -29,7 +29,7 @@ test_pipeline = [
 ]
 data = dict(
     samples_per_gpu=2,
-    workers_per_gpu=2,
+    workers_per_gpu=0,
     train=dict(
         type=dataset_type,
         ann_file=data_root + 'train/labelTxt/',
@@ -42,6 +42,6 @@ data = dict(
         pipeline=test_pipeline),
     test=dict(
         type=dataset_type,
-        ann_file=data_root + 'test/offshore/labelTxt/',
-        img_prefix=data_root + 'test/offshore/images/',
+        ann_file=data_root + 'test/all/labelTxt/',
+        img_prefix=data_root + 'test/all/images/',
         pipeline=test_pipeline))
