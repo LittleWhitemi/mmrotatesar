@@ -292,6 +292,8 @@ class RotatedFCOSHead(RotatedAnchorFreeHead):
                 pos_decoded_target_preds,
                 weight=pos_centerness_targets,
                 avg_factor=centerness_denorm)
+            print('pos_angle_preds=',pos_angle_preds)
+            print('pos_angle_targets=',pos_angle_targets)
             if self.separate_angle:
                 loss_angle = self.loss_angle(
                     pos_angle_preds, pos_angle_targets, avg_factor=num_pos)

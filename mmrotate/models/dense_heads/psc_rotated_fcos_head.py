@@ -7,10 +7,10 @@ from mmcv.runner import force_fp32
 from mmdet.core import reduce_mean
 
 from mmrotate.core import build_bbox_coder, multiclass_nms_rotated
-from ..builder import ROTATED_HEADS
+# from ..builder import ROTATED_HEADS
 from .rotated_anchor_free_head import RotatedAnchorFreeHead
 from .rotated_fcos_head import RotatedFCOSHead
-
+from mmrotate.models.builder import ROTATED_HEADS
 INF = 1e8
 
 
@@ -42,7 +42,7 @@ class PSCRFCOSHead(RotatedFCOSHead):
         self.separate_angle = separate_angle
         assert separate_angle, 'Only support separate angle in PSC'
         assert scale_angle is False, 'Only support no scale angle in PSC'
-        self.coding_len = self.angle_coder.coding_len
+        self.coding_len = self.angle_coder.encode_size
         super().__init__(
             separate_angle=separate_angle, scale_angle=scale_angle, **kwargs)
 
