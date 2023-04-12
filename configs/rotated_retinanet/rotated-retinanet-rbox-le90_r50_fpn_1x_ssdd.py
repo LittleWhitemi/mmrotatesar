@@ -1,8 +1,8 @@
 _base_ = [
-    '../_base_/datasets/hrsc.py', '../_base_/schedules/schedule_6x.py',
+    '../_base_/datasets/ssdd.py', '../_base_/schedules/schedule_1x.py',
     '../_base_/default_runtime.py'
 ]
-angle_version = 'oc'
+angle_version = 'le90'
 
 model = dict(
     type='mmdet.RetinaNet',
@@ -65,7 +65,7 @@ model = dict(
             neg_iou_thr=0.4,
             min_pos_iou=0,
             ignore_iof_thr=-1,
-            iou_calculator=dict(type='FakeRBboxOverlaps2D')),
+            iou_calculator=dict(type='RBboxOverlaps2D')),
         sampler=dict(
             type='mmdet.PseudoSampler'),  # Focal loss should use PseudoSampler
         allowed_border=-1,
@@ -77,18 +77,3 @@ model = dict(
         score_thr=0.05,
         nms=dict(type='nms_rotated', iou_threshold=0.1),
         max_per_img=2000))
-
-train_pipeline = [
-    dict(type='mmdet.LoadImageFromFile', backend_args={{_base_.backend_args}}),
-    dict(type='mmdet.LoadAnnotations', with_bbox=True, box_type='qbox'),
-    dict(type='ConvertBoxType', box_type_mapping=dict(gt_bboxes='rbox')),
-    dict(type='mmdet.Resize', scale=(800, 512), keep_ratio=True),
-    dict(
-        type='mmdet.RandomFlip',
-        prob=0.75,
-        direction=['horizontal', 'vertical', 'diagonal']),
-    dict(type='RandomRotate', prob=0.5, angle_range=180),
-    dict(type='mmdet.PackDetInputs')
-]
-
-train_dataloader = dict(dataset=dict(pipeline=train_pipeline))
