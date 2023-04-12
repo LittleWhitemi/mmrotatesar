@@ -1,4 +1,4 @@
-_base_ = 'rotated_fcos_r50_fpn_200e_ssdd_le90.py'
+_base_ = 'rotated_fcos_sep_angle_r50_fpn_200e_ssdd_le90.py'
 angle_version = 'le90'
 
 # model settings

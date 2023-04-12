@@ -1,5 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from .csl_rotated_fcos_head import CSLRFCOSHead
+from .csl_rotated_fcos_head import CSLRFCOSHead, PSCRFCOSHead
 from .csl_rotated_retina_head import CSLRRetinaHead
 from .kfiou_odm_refine_head import KFIoUODMRefineHead
 from .kfiou_rotate_retina_head import KFIoURRetinaHead
@@ -16,6 +16,7 @@ from .rotated_retina_head import RotatedRetinaHead
 from .rotated_retina_refine_head import RotatedRetinaRefineHead
 from .rotated_rpn_head import RotatedRPNHead
 from .sam_reppoints_head import SAMRepPointsHead
+# from .psc_rotated_fcos_head import PSCRFCOSHead
 
 __all__ = [
     'RotatedAnchorHead', 'RotatedRetinaHead', 'RotatedRPNHead',
@@ -23,5 +24,5 @@ __all__ = [
     'KFIoURRetinaHead', 'KFIoURRetinaRefineHead', 'KFIoUODMRefineHead',
     'RotatedRepPointsHead', 'SAMRepPointsHead', 'CSLRRetinaHead',
     'RotatedATSSHead', 'RotatedAnchorFreeHead', 'RotatedFCOSHead',
-    'CSLRFCOSHead', 'OrientedRepPointsHead'
+    'CSLRFCOSHead', 'OrientedRepPointsHead', 'PSCRFCOSHead'
 ]

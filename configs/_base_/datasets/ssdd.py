@@ -6,7 +6,7 @@ img_norm_cfg = dict(
 train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True),
-    dict(type='RResize', img_scale=(608, 608)),
+    dict(type='RResize', img_scale=(500, 500)),
     dict(type='RRandomFlip', flip_ratio=0.5),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Pad', size_divisor=32),
@@ -17,7 +17,7 @@ test_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(
         type='MultiScaleFlipAug',
-        img_scale=(608, 608),
+        img_scale=(500, 500),
         flip=False,
         transforms=[
             dict(type='RResize'),
@@ -37,8 +37,8 @@ data = dict(
         pipeline=train_pipeline),
     val=dict(
         type=dataset_type,
-        ann_file=data_root + 'test/inshore/labelTxt/',
-        img_prefix=data_root + 'test/inshore/images/',
+        ann_file=data_root + 'test/all/labelTxt/',
+        img_prefix=data_root + 'test/all/images/',
         pipeline=test_pipeline),
     test=dict(
         type=dataset_type,
