@@ -14,10 +14,7 @@ except ImportError:
     shgeo = None
 
 wordname_15 = [
-    'plane', 'baseball-diamond', 'bridge', 'ground-track-field',
-    'small-vehicle', 'large-vehicle', 'ship', 'tennis-court',
-    'basketball-court', 'storage-tank', 'soccer-ball-field', 'roundabout',
-    'harbor', 'swimming-pool', 'helicopter'
+    'ship', 
 ]
 
 
@@ -87,7 +84,7 @@ def parse_dota_poly2(filename):
 
 def main(args):
     imageparent = os.path.join(args.srcpath, 'images')
-    labelparent = os.path.join(args.srcpath, 'annfiles')
+    labelparent = os.path.join(args.srcpath, 'labelTxt')
 
     data_dict = {}
     info = {
