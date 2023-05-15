@@ -6,8 +6,10 @@ from .delta_xywha_rbbox_coder import DeltaXYWHAOBBoxCoder
 from .distance_angle_point_coder import DistanceAnglePointCoder
 from .gliding_vertex_coder import GVFixCoder, GVRatioCoder
 from .angle_coder import PSCCoder
+from .delta_xywha_rbbox_soft_coder import DeltaXYWHAOBBoxSoftCoder
 
 __all__ = [
     'DeltaXYWHAOBBoxCoder', 'DeltaXYWHAHBBoxCoder', 'MidpointOffsetCoder',
-    'GVFixCoder', 'GVRatioCoder', 'CSLCoder', 'DistanceAnglePointCoder', 'PSCCoder'
+    'GVFixCoder', 'GVRatioCoder', 'CSLCoder', 'DistanceAnglePointCoder', 'PSCCoder',
+    'DeltaXYWHAOBBoxSoftCoder'
 ]

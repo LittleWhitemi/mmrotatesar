@@ -17,6 +17,7 @@ from .rotated_retina_refine_head import RotatedRetinaRefineHead
 from .rotated_rpn_head import RotatedRPNHead
 from .sam_reppoints_head import SAMRepPointsHead
 from .psc_rotated_fcos_head import PSCRFCOSHead
+from .keyship_head import KeyShipHead
 
 __all__ = [
     'RotatedAnchorHead', 'RotatedRetinaHead', 'RotatedRPNHead',
@@ -24,5 +25,6 @@ __all__ = [
     'KFIoURRetinaHead', 'KFIoURRetinaRefineHead', 'KFIoUODMRefineHead',
     'RotatedRepPointsHead', 'SAMRepPointsHead', 'CSLRRetinaHead',
     'RotatedATSSHead', 'RotatedAnchorFreeHead', 'RotatedFCOSHead',
-    'CSLRFCOSHead', 'OrientedRepPointsHead', 'PSCRFCOSHead'
+    'CSLRFCOSHead', 'OrientedRepPointsHead', 'PSCRFCOSHead',
+    'KeyShipHead'
 ]

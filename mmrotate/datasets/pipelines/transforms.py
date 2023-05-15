@@ -9,10 +9,27 @@ from mmcv.ops import box_iou_rotated
 from mmdet.datasets.pipelines.transforms import (Mosaic, RandomCrop,
                                                  RandomFlip, Resize)
 from numpy import random
+from mmdet.datasets.pipelines.transforms import RandomFlip, Resize, RandomCenterCropPad, Mosaic, RandomCrop
+from mmdet.datasets.pipelines.auto_augment import Translate, Rotate
 
 from mmrotate.core import norm_angle, obb2poly_np, poly2obb_np
 from ..builder import ROTATED_PIPELINES
 
+def bbox2fields():
+    """The key correspondence from bboxes to labels, masks and
+    segmentations."""
+    bbox2label = {
+        'gt_bboxes': 'gt_labels',
+        'gt_bboxes_ignore': 'gt_labels_ignore'
+    }
+    bbox2mask = {
+        'gt_bboxes': 'gt_masks',
+        'gt_bboxes_ignore': 'gt_masks_ignore'
+    }
+    bbox2seg = {
+        'gt_bboxes': 'gt_semantic_seg',
+    }
+    return bbox2label, bbox2mask, bbox2seg
 
 @ROTATED_PIPELINES.register_module()
 class RResize(Resize):
@@ -28,12 +45,14 @@ class RResize(Resize):
     def __init__(self,
                  img_scale=None,
                  multiscale_mode='range',
-                 ratio_range=None):
+                 ratio_range=None,
+                 override=False):
         super(RResize, self).__init__(
             img_scale=img_scale,
             multiscale_mode=multiscale_mode,
             ratio_range=ratio_range,
-            keep_ratio=True)
+            keep_ratio=True,
+            override=override)
 
     def _resize_bboxes(self, results):
         """Resize bounding boxes with ``results['scale_factor']``."""
@@ -276,6 +295,226 @@ class PolyRandomRotate(object):
                     f'auto_bound={self.auto_bound})'
         return repr_str
 
+@ROTATED_PIPELINES.register_module()
+class RTranslate(Translate):
+
+    def __init__(self, 
+                 level, 
+                 prob=0.5, 
+                 img_fill_val=128, 
+                 seg_ignore_label=255, 
+                 direction='horizontal', 
+                 max_translate_offset=250, 
+                 random_negative_prob=0.5, 
+                 min_size=0):
+        super().__init__(level, 
+                         prob, 
+                         img_fill_val, 
+                         seg_ignore_label, 
+                         direction, 
+                         max_translate_offset, 
+                         random_negative_prob, 
+                         min_size)
+    
+    def _translate_bboxes(self, results, offset):
+        h, w, c = results['pad_shape']
+        for key in results.get('bbox_fields', []):
+            x, y, b_w, b_h, a = np.split(
+                results[key], results[key].shape[-1], axis=-1)
+            if self.direction == 'horizontal':
+                # x = np.maximum(0, x + offset)
+                # x = np.minimum(w, x)
+                x = x + offset
+            elif self.direction == 'vertical':
+                # y = np.maximum(0, y + offset)
+                # y = np.minimum(h, y)
+                y = y + offset
+
+            # the boxes translated outside of image will be filtered along with
+            # the corresponding masks, by invoking ``_filter_invalid``.
+            results[key] = np.concatenate([x, y, b_w, b_h, a],
+                                          axis=-1)
+
+    def _filter_invalid(self, results, min_size=0):
+        """Filter bboxes and masks too small or translated out of image."""
+        bbox2label, bbox2mask, _ = bbox2fields()
+        for key in results.get('bbox_fields', []):
+            bbox_w = results[key][:, 2]
+            bbox_h = results[key][:, 3]
+            valid_inds = (bbox_w > min_size) & (bbox_h > min_size)
+            valid_inds = np.nonzero(valid_inds)[0]
+            results[key] = results[key][valid_inds]
+            # label fields. e.g. gt_labels and gt_labels_ignore
+            label_key = bbox2label.get(key)
+            if label_key in results:
+                results[label_key] = results[label_key][valid_inds]
+            # mask fields, e.g. gt_masks and gt_masks_ignore
+            mask_key = bbox2mask.get(key)
+            if mask_key in results:
+                results[mask_key] = results[mask_key][valid_inds]
+        return results
+
+
+@ROTATED_PIPELINES.register_module()
+class RRotate(Rotate):
+
+    def __init__(self, 
+                 level, 
+                 scale=1, 
+                 center=None, 
+                 img_fill_val=128, 
+                 seg_ignore_label=255, 
+                 prob=0.5, 
+                 max_rotate_angle=30, 
+                 random_negative_prob=0.5):
+        super().__init__(level, 
+                         scale, 
+                         center, 
+                         img_fill_val, 
+                         seg_ignore_label, 
+                         prob, 
+                         max_rotate_angle, 
+                         random_negative_prob)
+
+    def _rotate_bboxes(self, results, rotate_matrix):
+        """Rotate the bboxes."""
+        for key in results.get('bbox_fields', []):
+            boxes = results[key]
+            rboxes = []
+            for box in boxes:
+                x, y, b_w, b_h, a = box
+                a = a * 180 / np.pi
+                box_pts = cv2.boxPoints(((x, y), (b_w, b_h), a))
+                box_pts = np.concatenate((box_pts, np.ones((4, 1), box_pts.dtype)), axis=1)
+                rbox_pts = np.matmul(box_pts, rotate_matrix.T)
+                rbox = cv2.minAreaRect(rbox_pts.astype(np.float32))
+                x, y, b_w, b_h, a = rbox[0][0], rbox[0][1], rbox[1][0], rbox[1][1], rbox[2]
+                while not 0 > a >= -90:
+                    if a >= 0:
+                        a -= 90
+                        b_w, b_h = b_h, b_w
+                    else:
+                        a += 90
+                        b_w, b_h = b_h, b_w
+                a = a / 180 * np.pi
+                assert 0 > a >= -np.pi / 2
+                rboxes.append([x, y, b_w, b_h, a])
+            results[key] = np.array(rboxes).astype(results[key].dtype)
+
+    def _filter_invalid(self, results, min_size=0):
+        """Filter bboxes and masks too small or translated out of image."""
+        bbox2label, bbox2mask, _ = bbox2fields()
+        for key in results.get('bbox_fields', []):
+            bbox_w = results[key][:, 2]
+            bbox_h = results[key][:, 3]
+            valid_inds = (bbox_w > min_size) & (bbox_h > min_size)
+            valid_inds = np.nonzero(valid_inds)[0]
+            results[key] = results[key][valid_inds]
+            # label fields. e.g. gt_labels and gt_labels_ignore
+            label_key = bbox2label.get(key)
+            if label_key in results:
+                results[label_key] = results[label_key][valid_inds]
+            # mask fields, e.g. gt_masks and gt_masks_ignore
+            mask_key = bbox2mask.get(key)
+            if mask_key in results:
+                results[mask_key] = results[mask_key][valid_inds]
+        return results
+
+@ROTATED_PIPELINES.register_module()
+class RRandomCenterCropPad(RandomCenterCropPad):
+
+    def __init__(self, 
+                crop_size=None, 
+                ratios=..., 
+                border=128, 
+                mean=None, 
+                std=None, 
+                to_rgb=None, 
+                test_mode=False, 
+                test_pad_mode=..., 
+                test_pad_add_pix=0, 
+                bbox_clip_border=True):
+        super().__init__(crop_size, 
+                         ratios, 
+                         border, 
+                         mean, 
+                         std, 
+                         to_rgb, 
+                         test_mode, 
+                         test_pad_mode, 
+                         test_pad_add_pix, 
+                         bbox_clip_border)
+
+    def _filter_boxes(self, patch, boxes):
+        center = boxes[:, :2]
+        mask = (center[:, 0] > patch[0]) * (center[:, 1] > patch[1]) * (
+            center[:, 0] < patch[2]) * (
+                center[:, 1] < patch[3])
+        return mask
+        
+    def _train_aug(self, results):
+        """Random crop and around padding the original image.
+
+        Args:
+            results (dict): Image infomations in the augment pipeline.
+
+        Returns:
+            results (dict): The updated dict.
+        """
+        img = results['img']
+        h, w, c = img.shape
+        boxes = results['gt_bboxes']
+        while True:
+            scale = random.choice(self.ratios)
+            new_h = int(self.crop_size[0] * scale)
+            new_w = int(self.crop_size[1] * scale)
+            h_border = self._get_border(self.border, h)
+            w_border = self._get_border(self.border, w)
+
+            for i in range(50):
+                center_x = random.randint(low=w_border, high=w - w_border)
+                center_y = random.randint(low=h_border, high=h - h_border)
+
+                cropped_img, border, patch = self._crop_image_and_paste(
+                    img, [center_y, center_x], [new_h, new_w])
+
+                mask = self._filter_boxes(patch, boxes)
+                # if image do not have valid bbox, any crop patch is valid.
+                if not mask.any() and len(boxes) > 0:
+                    continue
+
+                results['img'] = cropped_img
+                results['img_shape'] = cropped_img.shape
+                results['pad_shape'] = cropped_img.shape
+
+                x0, y0, x1, y1 = patch
+
+                left_w, top_h = center_x - x0, center_y - y0
+                cropped_center_x, cropped_center_y = new_w // 2, new_h // 2
+
+                # crop bboxes accordingly and clip to the image boundary
+                for key in results.get('bbox_fields', []):
+                    mask = self._filter_boxes(patch, results[key])
+                    bboxes = results[key][mask]
+                    bboxes[:, 0] += cropped_center_x - left_w - x0
+                    bboxes[:, 1] += cropped_center_y - top_h - y0
+                    if self.bbox_clip_border:
+                        bboxes[:, 0] = np.clip(bboxes[:, 0], 0, new_w)
+                        bboxes[:, 1] = np.clip(bboxes[:, 1], 0, new_h)
+                    results[key] = bboxes
+                    if key in ['gt_bboxes']:
+                        if 'gt_labels' in results:
+                            labels = results['gt_labels'][mask]
+                            results['gt_labels'] = labels
+                        if 'gt_masks' in results:
+                            raise NotImplementedError(
+                                'RandomCenterCropPad only supports bbox.')
+
+                # crop semantic seg
+                for key in results.get('seg_fields', []):
+                    raise NotImplementedError(
+                        'RandomCenterCropPad only supports bbox.')
+                return results
 
 @ROTATED_PIPELINES.register_module()
 class RRandomCrop(RandomCrop):
