@@ -12,7 +12,7 @@ from .rotated_anchor_free_head import RotatedAnchorFreeHead
 
 INF = 1e8
 
-
+    
 @ROTATED_HEADS.register_module()
 class RotatedFCOSHead(RotatedAnchorFreeHead):
     """Anchor-free head used in `FCOS <https://arxiv.org/abs/1904.01355>`_.
@@ -292,8 +292,7 @@ class RotatedFCOSHead(RotatedAnchorFreeHead):
                 pos_decoded_target_preds,
                 weight=pos_centerness_targets,
                 avg_factor=centerness_denorm)
-            print('pos_angle_preds=',pos_angle_preds)
-            print('pos_angle_targets=',pos_angle_targets)
+
             if self.separate_angle:
                 loss_angle = self.loss_angle(
                     pos_angle_preds, pos_angle_targets, avg_factor=num_pos)
